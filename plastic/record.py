@@ -118,7 +118,7 @@ def genRecordType(header):
         _fields = tuple(rf for rf in rawFields)
         _sanitizedFields = tuple(srf for srf in sanitizedFields)
         _lookup = dict(kv for kv 
-                       in zip(rawFields + sanitizedFields, range(len(_fields))*2) )
+                       in zip(rawFields + sanitizedFields, list(range(len(_fields)))*2) )
 
         _reprString = 'Record(%s)' % (', '.join("%s=%%r" % f for f in sanitizedFields),)
 

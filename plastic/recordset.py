@@ -56,7 +56,7 @@ class RecordSetColumn(object):
 
         
 
-class RecordSet():
+class RecordSet(object):
     """Holds groups of records. The gindex is the label for each of the tuples of Records.
     
     Based on collections.MutableSequence
@@ -65,10 +65,10 @@ class RecordSet():
     # References need to be weak to ensure garbage collection can continue like normal.
     _instances = WeakSet()
 
-    __slots__ = ('_RecordType', '_groups', '_columns')
+    __slots__ = ('__weakref__', '_RecordType', '_groups', '_columns')
 
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, initialData=None,  recordType=None, initialLabel=None, validate=False, *args, **kwargs):
         """See https://stackoverflow.com/a/12102666/1943640 for an example of this."""
         instance = super(RecordSet, cls).__new__(cls, *args, **kwargs)
         cls._instances.add(instance)
@@ -142,12 +142,12 @@ class RecordSet():
         # Note that it'll regenerate indexes even on copy...
         
     
-    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False):#, indexingFunction=None):        
+    def __init__(self, initialData=None,  recordType=None, initialLabel=None, validate=False, *args, **kwargs):#, indexingFunction=None):        
         """When creating a new RecordSet, the key is to provide an unambiguous RecordType,
              or at least enough information to define one.
         """
         # Initialize mixins
-        super(RecordSet, self).__init__(initialData, recordType, initialLabel, validate)
+        super(RecordSet, self).__init__(*args, **kwargs)
         
         # We can initialize with a record type, a record, or an iterable of records
         # First check if it's a DataSet object. If so, convert it.
