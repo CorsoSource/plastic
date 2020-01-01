@@ -14,8 +14,7 @@ try:
     from com.inductiveautomation.ignition.common import BasicDataset
 except ImportError:
     from abc import ABCMeta
-    class BasicDataset():
-        __metaclass__ = ABCMeta
+    class BasicDataset(metaclass=ABCMeta):
         pass
 
 

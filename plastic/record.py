@@ -11,8 +11,7 @@ try:
 except ImportError:
     from abc import ABCMeta
     
-    class BasicDataset():
-        __metaclass__ = ABCMeta
+    class BasicDataset(metaclass=ABCMeta):
         pass
     
 

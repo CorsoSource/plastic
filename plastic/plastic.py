@@ -6,7 +6,7 @@ from .connection import PlasticORM_Connection_Base
 from .column import PlasticColumn
 
             
-class PlasticORM_Base(object):
+class PlasticORM_Base(object, metaclass=MetaPlasticORM):
     """Base class that connects a derived class to the database.
 
     When declaring the subclass, set the defaults in it directly 
@@ -14,9 +14,7 @@ class PlasticORM_Base(object):
 
     NOTE: If no columns are configured, the class will attempt to autoconfigure
       regardless of whether _autoconfigure is set.
-    """
-    __metaclass__ = MetaPlasticORM
-    
+    """    
     # set defaults for derived classes here
     
     # By default this is a nop. Be sure to set this is the 
