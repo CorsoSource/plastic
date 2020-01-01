@@ -3,6 +3,7 @@ import functools
 
 from .metaplastic import MetaPlasticORM
 from .connection import PlasticORM_Connection_Base
+from .column import PlasticColumn
 
             
 class PlasticORM_Base(object):
@@ -63,7 +64,7 @@ class PlasticORM_Base(object):
     
 
     @_delayAutocommit
-    def __init__(self, *args, bypass_validation=False, **kwargs):
+    def __init__(self, bypass_validation=False, *args, **kwargs):
         """Initialize the object's instance with the given values.
 
         Arguments are assumed to map directly in order to the columns.
@@ -71,7 +72,7 @@ class PlasticORM_Base(object):
 
         If key columns are given, then pull the rest unconfigured.
 
-        Include the keyword arguement _bypass_validation = True
+        Include the keyword arguement bypass_validation = True
           to accept the values 
         """
         values = dict((col,val) for col,val in zip(self._columns,args))
@@ -85,7 +86,7 @@ class PlasticORM_Base(object):
         else:
             # Check if the keys are given, if so get all the values for that record
             if all(key in values for key in self._primary_key_cols):
-                self._retrieveSelf(values)
+                self._retrieveSelf(**values)
             
             #... but then immediately override with the values provided
             for column,value in values.items():
@@ -181,7 +182,7 @@ class PlasticORM_Base(object):
         objects = []
         for record in records:
             initDict = record._asdict()
-            initDict['_bypass_validation'] = True
+            initDict['bypass_validation'] = True
             objects.append(cls(**initDict))
 
         return objects

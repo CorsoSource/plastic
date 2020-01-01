@@ -19,7 +19,6 @@ class MetaPlasticORM(type):
         """Initializes the basic attributes for the class itself.
         Auto-configuration is kicked off here.
         """
-
         # Do a null setup for the base classes.
         # This allows Plastic to defer some of its configuration until the
         #   database specific classes are defined.
@@ -42,7 +41,7 @@ class MetaPlasticORM(type):
         #   spaces or odd/illegal characters.
         for ix,column in enumerate(cls._columns):
             setattr(cls,column,PlasticColumn(cls, column))
-        
+
         # Continue and carry out the normal class definition process   
         return super(MetaPlasticORM,cls).__init__(clsname, bases, attributes)   
 

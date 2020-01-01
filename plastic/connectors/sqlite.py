@@ -67,7 +67,7 @@ class Sqlite_Connector(PlasticORM_Connection_Base):
             cursor.execute(query,values)
             if not cursor.description:
                 return []
-            rs = RecordSet(initialData=cursor.fetchall(), recordType=next(zip(*cursor.description)))
+            rs = RecordSet(initialData=cursor.fetchall(), recordType=zip(*cursor.description)[0])
         return rs    
     
 

@@ -38,19 +38,19 @@ class PlasticORM_Connection_Base(_Template_PlasticORM_Connection):
     connection = None
 
 
-    def dumpCore(function):
-        @functools.wraps(function)
-        def handle_error(self,*args,**kwargs):
-            try:
-                return function(self,*args,**kwargs)
-            except Exception as error:
-                print ('DB Error: ', str(error))
-                if args:
-                    print ('Arguments: ', args)
-                if kwargs:
-                    print ('Key word arguments: ', kwargs)
-                raise error
-        return handle_error
+    # def dumpCore(function):
+    #     @functools.wraps(function)
+    #     def handle_error(self,*args,**kwargs):
+    #         try:
+    #             return function(self,*args,**kwargs)
+    #         except Exception as error:
+    #             print ('DB Error: ', str(error))
+    #             if args:
+    #                 print ('Arguments: ', args)
+    #             if kwargs:
+    #                 print ('Key word arguments: ', kwargs)
+    #             raise error
+    #     return handle_error
     
 
     def _get_query_template(self, queryType):
@@ -58,7 +58,7 @@ class PlasticORM_Connection_Base(_Template_PlasticORM_Connection):
         return qt.replace('PARAM_TOKEN',self._param_token)
     
 
-    @dumpCore
+    # @dumpCore
     def query(self,query,params=[]):
         query = query.replace('PARAM_TOKEN', self._param_token)
         return self._execute_query(query,params)
@@ -68,7 +68,7 @@ class PlasticORM_Connection_Base(_Template_PlasticORM_Connection):
         return self.query(query,params)[0]
 
 
-    @dumpCore
+    # @dumpCore
     def insert(self, table, columns, values):
         insertQuery = self._get_query_template('insert')
         insertQuery %= (table, 
@@ -79,7 +79,7 @@ class PlasticORM_Connection_Base(_Template_PlasticORM_Connection):
         return self._execute_insert(insertQuery,values)
     
     
-    @dumpCore
+    # @dumpCore
     def update(self, table, setDict, keyDict):
         setColumns,setValues = zip(*sorted(setDict.items()))
         keyColumns,keyValues = zip(*sorted(keyDict.items()))
