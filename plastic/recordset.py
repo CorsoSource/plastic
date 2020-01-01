@@ -1,7 +1,11 @@
 from .record import RecordType, genRecordType
 
 import functools, math
-from itertools import izip as zip
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
 from itertools import islice
 
 from weakref import WeakSet

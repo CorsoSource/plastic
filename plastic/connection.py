@@ -44,11 +44,11 @@ class PlasticORM_Connection_Base(_Template_PlasticORM_Connection):
             try:
                 return function(self,*args,**kwargs)
             except Exception as error:
-                print 'DB Error: ', str(error)
+                print ('DB Error: ', str(error))
                 if args:
-                    print 'Arguments: ', args
+                    print ('Arguments: ', args)
                 if kwargs:
-                    print 'Key word arguments: ', kwargs
+                    print ('Key word arguments: ', kwargs)
                 raise error
         return handle_error
     

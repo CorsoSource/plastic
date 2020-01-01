@@ -1,4 +1,9 @@
-from itertools import izip as zip
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
+
 import re
 
 try:
