@@ -1,6 +1,7 @@
 *.sublime-*
 **/.ipynb_checkpoints/*
 dev/
+*.bat
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

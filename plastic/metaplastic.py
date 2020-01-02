@@ -29,7 +29,8 @@ class MetaPlasticORM(type):
         # Thus we can be sure to configure _before_ creating the derived classes
         else:
             # Critically, the connection definition is deferred until here
-            cls._connection = cls._connectionType(cls._dbInfo)
+            if not cls._connection:
+                cls._connection = cls._connectionType(cls._dbInfo)
             cls._table = cls._table or clsname
             cls._table = cls._table.lower()
             cls._verify_columns()

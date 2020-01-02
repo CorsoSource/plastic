@@ -104,10 +104,10 @@ class PlasticMysql(PlasticORM_Base):
 
     _dbInfo = dict(
         host='mysql8-test.corso.systems',
-        port='31825',
-        database='test',
+        port='30306',
+        database='plastic_test',
         user='root',
-        password='********',
+        password='**********',
         use_pure=True,
         autocommit=True,
         auth_plugin='mysql_native_password',
