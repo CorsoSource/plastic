@@ -1,4 +1,8 @@
-import mysql.connector
+import pymysql
+# try:
+#     import mysql.connector as mysql_connector
+# except ImportError:
+#     import pymysql as mysql_connector
 
 import textwrap
 
@@ -11,7 +15,7 @@ META_QUERIES['mysql'] = {
     'primaryKeys': textwrap.dedent("""
             -- Query for primary keys for PlasticORM
             select c.COLUMN_NAME
-            ,   case when c.extra like '%auto_increment%' 
+            ,   case when c.extra like '%%auto_increment%%' 
                         then 1
                     else 0
                 end as autoincrements
@@ -32,7 +36,7 @@ META_QUERIES['mysql'] = {
                 and c.table_schema = PARAM_TOKEN
             order by c.ordinal_position
             """),
-    },
+    }
 
 
 class Mysql_Connector(PlasticORM_Connection_Base):
@@ -56,7 +60,7 @@ class Mysql_Connector(PlasticORM_Connection_Base):
             self.connection = None
 
         if self.connection is None:
-            self.connection = mysql.connector.connect(**self.config)
+            self.connection = pymysql.connect(**self.config)
 
 
     def __enter__(self):
@@ -69,7 +73,7 @@ class Mysql_Connector(PlasticORM_Connection_Base):
             # Commit changes before closing
             if not self.connection.autocommit:
                 self.connection.commit()
-            if nost self._keep_alive:
+            if not self._keep_alive:
                 self.connection.close()
                 self.connection = None
     
@@ -79,8 +83,8 @@ class Mysql_Connector(PlasticORM_Connection_Base):
         """Execute a query. Returns rows of data."""
         with self as plasticDB:
             cursor = plasticDB.connection.cursor()
-            cursor.execute(query,params=values)
-            rs = RecordSet(initialData=cursor.fetchall(), recordType=cursor.column_names)
+            cursor.execute(query,values)
+            rs = RecordSet(initialData=cursor.fetchall(), recordType=next(zip(*cursor.description)))
         return rs    
     
 
@@ -88,7 +92,7 @@ class Mysql_Connector(PlasticORM_Connection_Base):
         """Execute an insert query. Returns an integer for the row inserted."""
         with self as plasticDB:
             cursor = plasticDB.connection.cursor()
-            cursor.execute(insertQuery,params=insertValues)
+            cursor.execute(insertQuery,insertValues)
             return cursor.lastrowid
         
 
@@ -96,21 +100,19 @@ class Mysql_Connector(PlasticORM_Connection_Base):
         """Execute an updated query. Returns nothing."""
         with self as plasticDB:
             cursor = plasticDB.connection.cursor()
-            cursor.execute(updateQuery,params=updateValues)
+            cursor.execute(updateQuery,updateValues)
 
 
 class PlasticMysql(PlasticORM_Base):
     _connectionType = Mysql_Connector
 
+    _schema = 'plastic_test'
     _dbInfo = dict(
         host='mysql8-test.corso.systems',
-        port='30306',
-        database='plastic_test',
+        port=30306,
+        db='plastic_test',
         user='root',
         password='**********',
-        use_pure=True,
-        autocommit=True,
-        auth_plugin='mysql_native_password',
     )
 
     pass
