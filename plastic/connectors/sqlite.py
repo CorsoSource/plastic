@@ -95,7 +95,7 @@ class Sqlite_Connector(PlasticORM_Connection_Base):
         pkCols = []
         for row in results:
             if row['pk']:                  # sqlite autoincrements int primary keys
-                pkCols.append( (row['name'], 1 if row['type'] == 'integer' else 0) )
+                pkCols.append( (row['name'], 1 if row['type'].lower() == 'integer' else 0) )
         return RecordSet(initialData=pkCols, recordType=('COLUMN_NAME', 'autoincrements'))
 
 

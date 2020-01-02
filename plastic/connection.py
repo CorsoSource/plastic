@@ -20,7 +20,7 @@ META_QUERIES[None] = {
         where %s
         """),
     'basic_filtered': textwrap.dedent("""
-        -- A Basic filteres query for PlasticORM
+        -- A Basic filter query for PlasticORM
         select %s
         from %s
         where %s

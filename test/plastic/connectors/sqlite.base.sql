@@ -2,7 +2,7 @@ CREATE TABLE "task" (
 	"id" INTEGER PRIMARY KEY AUTOINCREMENT
 	,"active" INTEGER NOT NULL DEFAULT 0
 	,"title" TEXT NOT NULL
-	,"description" TEXT
+	,"description" TEXT NULL
 	);
 
 INSERT INTO task ("active", "title", "description") VALUES (1, 'Some Task', 'A first thing to do.');

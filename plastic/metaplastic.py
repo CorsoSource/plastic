@@ -68,16 +68,16 @@ class MetaPlasticORM(type):
                 # collect the columns from the engine
                 columns = plasticDB.columnConfig(cls._schema, cls._table)
                 if columns:
-                    cls._columns, cls._non_null_cols = zip(*[r._tuple for r in columns])
+                    cls._columns, cls._not_nullable_cols = zip(*[r._tuple for r in columns])
                     # change to column names
-                    cls._non_null_cols = tuple(col 
+                    cls._not_nullable_cols = tuple(col 
                                                for col,nullable 
-                                               in zip(cls._columns, cls._non_null_cols)
-                                               if nullable
+                                               in zip(cls._columns, cls._not_nullable_cols)
+                                               if not nullable
                                               )
                     cls._values = [None]*len(cls._columns)
                 else:
                     cls._columns = tuple()
-                    cls._non_null_cols = tuple()
+                    cls._not_nullable_cols = tuple()
                     cls._values = []
                             

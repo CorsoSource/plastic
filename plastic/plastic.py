@@ -34,7 +34,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
     _columns = tuple()
     _primary_key_cols = tuple()
     _primary_key_auto = tuple()
-    _non_null_cols = tuple()
+    _not_nullable_cols = tuple()
     
     # If the _table is blank, the class name will be used instead.
     _table = ''
@@ -62,7 +62,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
     
 
     @_delayAutocommit
-    def __init__(self, bypass_validation=False, *args, **kwargs):
+    def __init__(self, *args, bypass_validation=False, **kwargs):
         """Initialize the object's instance with the given values.
 
         Arguments are assumed to map directly in order to the columns.
@@ -73,6 +73,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
         Include the keyword arguement bypass_validation = True
           to accept the values 
         """
+        self._pending = [] # override class object to ensure changes are local
         values = dict((col,val) for col,val in zip(self._columns,args))
         values.update(kwargs)
         
@@ -88,9 +89,10 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
             
             #... but then immediately override with the values provided
             for column,value in values.items():
-                setattr(self, column, value)
-            
+                if getattr(self, column) != value:
+                    setattr(self, column, value)
     
+
     def __setattr__(self, attribute, value):
         """Do the autocommit bookkeeping, if needed"""
 
@@ -198,8 +200,8 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
             keyDict = dict((key,getattr(self,key)) 
                            for key 
                            in self._primary_key_cols)
-        
-        # Essentially assert that all PKs are set
+
+        # Assert that all PKs are set
         if any(value is None or isinstance(value, PlasticColumn)
                for value 
                in keyDict.values()):
@@ -218,14 +220,17 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
             recordQuery %= (
                 ','.join(sorted(self._nonKeyColumns)),
                 self._table,
-                ','.join('%s = %%s' % keyColumn 
+                ','.join('%s = PARAM_TOKEN' % keyColumn 
                          for keyColumn 
                          in sorted(keyColumns)))
 
-            entry = plasticDB.queryOne(recordQuery, keyValues)    
-            
+            entry = plasticDB.queryOne(recordQuery, keyValues)
+            # apply retrieved values to the object
             for column in self._nonKeyColumns:
                 setattr(self, column, entry[column])
+            # slightly redundant, but meaningful for initialization
+            for column,keyValue in keyDict.items():
+                setattr(self, column, keyValue)
         
         # Clear the pending buffer, since we just retrieved    
         self._pending = []
@@ -239,7 +244,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
         """
         # Don't attempt to insert if there aren't enough pending column values set
         #   to cover the required non-NULL columns (excluding auto key columns, since they, well, auto)
-        if set(self._non_null_cols).union(self._nonAutoKeyColumns).difference(self._pending):
+        if set(self._not_nullable_cols).union(self._nonAutoKeyColumns).difference(self._pending):
             return
         
         # Don't insert the auto columns
@@ -268,8 +273,8 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
         This will also do some minor validation to make sure it's compliant.
         """
         # Don't update a column to null when it shouldn't be
-        for column in set(self._non_null_cols).intersection(self._pending):
-            if column is None:
+        for column in set(self._not_nullable_cols).intersection(self._pending):
+            if getattr(self, column) is None:
                 raise ValueError('Can not null column %s in table %s.%s' % (column, self._schema, self._table))
 
         setValues = dict((column,getattr(self,column))
@@ -295,7 +300,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
         
         # Insert if we don't have the key values yet (at least one of )
         if not all(getattr(self, keyColumn) is not None 
-                    and not isinstance(getattr(self, keyColumn), PlasticFilter)
+                    and not isinstance(getattr(self, keyColumn), PlasticColumn)
                    for keyColumn 
                    in self._primary_key_cols):
             self._insert()
