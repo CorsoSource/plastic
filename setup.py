@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="plastic",
-    version="0.1.1",
+    version="0.2.0",
     author="Andrew Geiger",
     author_email="andrew.geiger@corsosystems.com",
     description="An ORM interface that molds itself to your data.",
