@@ -56,11 +56,14 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
                 bufferAutocommit = self._autocommit
                 self._autocommit = False
                 return function(self, *args, **kwargs)
+            except Exception as err:
+                raise
             finally:
                 self._autocommit = bufferAutocommit
+                
         return resumeAfter
     
-
+        
     @_delayAutocommit
     def __init__(self, *args, bypass_validation=False, **kwargs):
         """Initialize the object's instance with the given values.
@@ -74,6 +77,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
           to accept the values 
         """
         self._pending = [] # override class object to ensure changes are local
+        
         values = dict((col,val) for col,val in zip(self._columns,args))
         values.update(kwargs)
         
@@ -81,6 +85,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
         if bypass_validation:
             for column,value in values.items():
                 setattr(self, column, value)
+
             self._pending = []
         else:
             # Check if the keys are given, if so get all the values for that record
@@ -95,11 +100,11 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
 
     def __setattr__(self, attribute, value):
         """Do the autocommit bookkeeping, if needed"""
-
         # Set columns as pending changes
-        if attribute in self._columns and getattr(self, attribute) != value:
+        currentValue = getattr(self, attribute)
+        if attribute in self._columns and currentValue != value:            
             self._pending.append(attribute)
-            
+        
         super(PlasticORM_Base,self).__setattr__(attribute, value)
         
         # Note that this means setting _autocommit to True will
@@ -225,16 +230,17 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
                          in sorted(keyColumns)))
 
             entry = plasticDB.queryOne(recordQuery, keyValues)
+
             # apply retrieved values to the object
             for column in self._nonKeyColumns:
                 setattr(self, column, entry[column])
             # slightly redundant, but meaningful for initialization
             for column,keyValue in keyDict.items():
                 setattr(self, column, keyValue)
-        
+
         # Clear the pending buffer, since we just retrieved    
         self._pending = []
-        
+
     
     def _insert(self):
         """Insert the current object's values as a new record.
@@ -248,7 +254,7 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
             return
         
         # Don't insert the auto columns
-        if self._primary_key_auto:
+        if any(self._primary_key_auto):
             columns = sorted(set(self._pending).difference(self._autoKeyColumns))
         else:
             columns = self._pending
@@ -286,29 +292,83 @@ class PlasticORM_Base(object, metaclass=MetaPlasticORM):
                          in self._primary_key_cols)
         
         # Delegate the update to the engine and apply
-        with self._connection as plasticDB:
+        with self._connection as plasticDB:            
             plasticDB.update(self._table, setValues, keyValues)
         
         # Clear the pending buffer, since we just sync'd
         self._pending = []
 
         
+    def _upsert(self):
+        """Attempt to decide if an update or insert is called for.
+        """
+        
+        values = {}
+        for column in self._pending:
+            value = getattr(self, column)
+                
+            # Don't upload unset values...
+            if isinstance(value, PlasticColumn):
+                continue
+                    
+            values[column] = value
+                    
+        pkValues = {}
+        for pkColumn in self._primary_key_cols:
+            pkValues[pkColumn] = values.get(pkColumn, getattr(self,pkColumn))
+        
+        # Check if the keys are given, if so get all the values for that record
+        
+        # We need to do a specialized delay autocommit so we can safely attempt this.
+        bufferAutocommit = self._autocommit
+        super(PlasticORM_Base,self).__setattr__('_autocommit', False)
+        
+        try:
+            # If this fails, it'll throw an IndexError from the record set being empty
+            self._retrieveSelf(**pkValues)
+        
+            #... but then immediately override with the values provided
+            for column,value in values.items():
+                if getattr(self, column) != value and not column in self._primary_key_cols:
+                    setattr(self, column, value)
+            
+            # Did we apply a new value that's not a PK and new? Then update!
+            if self._pending:
+                self._update()
+            
+        # if all else fails, then we should insert
+        except IndexError:            
+            self._insert()
+            
+        finally:
+            # We have to bypass the normal trigger here, or the system
+            # will attempt to do this all _again_. This is pretty exceptional,
+            # since we're manually implementing an upsert and essentially
+            # bouncing off exceptions and settings as rails.
+            # HONK.
+            super(PlasticORM_Base,self).__setattr__('_autocommit', bufferAutocommit)
+
+        
     def _commit(self):
         """Apply the changes, if any."""
+                
         if not self._pending:
             return
+
+        # Verify we have enough to insert
+        # Ensure that the primary keys are at least set
+        # NOTE: if PKs are set under autocommit conditions, 
+        #   the engine will try to retrieve.
+        # We'll do the same here, with the caveat that we'll update
         
-        # Insert if we don't have the key values yet (at least one of )
-        if not all(getattr(self, keyColumn) is not None 
-                    and not isinstance(getattr(self, keyColumn), PlasticColumn)
-                   for keyColumn 
-                   in self._primary_key_cols):
-            self._insert()
+        # So: are we switching to another record? If so pull and update!
+        if set(self._pending) & set(self._primary_key_cols):            
+            self._upsert()
         else:
             self._update()
             
             
     def __repr__(self):
-        return '%s(%s)' % (self._table, ','.join('%s=%s' % (col,repr(getattr(self,col)))
+        return '<%s (\n\t  %s)>' % (self._table, '\n\t, '.join('%s = %s' % (col,repr(getattr(self,col)))
                                                  for col
                                                  in self._columns))
