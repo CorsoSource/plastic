@@ -63,7 +63,7 @@ class MetaPlasticORM(type):
 				# collect the PKs from the engine
 				pkCols = plasticDB.primaryKeys(cls._schema, cls._table)
 				if pkCols:
-					cls._primary_key_cols, cls._primary_key_auto = zip(*(r._tuple for r in pkCols))    
+					cls._primary_key_cols, cls._primary_key_auto = zip(*(r._tuple for r in pkCols))
 		
 		# Auto-configure the columns, if needed
 		if cls._autoconfigure or not cls._columns:
@@ -83,4 +83,3 @@ class MetaPlasticORM(type):
 					cls._columns = tuple()
 					cls._not_nullable_cols = tuple()
 					cls._values = []
-							

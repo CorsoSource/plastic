@@ -12,10 +12,15 @@ from weakref import WeakSet
 
 try:
 	from com.inductiveautomation.ignition.common import BasicDataset
+	from com.inductiveautomation.ignition.common.script.builtin.DatasetUtilities import PyDataSet
 except ImportError:
 	from abc import ABCMeta
 	
 	class BasicDataset(object):
+		__metaclass__ = ABCMeta
+		pass
+	
+	class PyDataSet(object):
 		__metaclass__ = ABCMeta
 		pass
 
@@ -111,7 +116,17 @@ class RecordSet(object):
 			row = tuple(dataset.getValueAt(rix, cix) for cix in columnIxs)
 			records.append(self._RecordType(row))
 		self._groups = [tuple(records)]
-		
+	
+	def _initializePyDataSet(self, pydataset, validate=False):
+		"""Convert the DataSet type into a RecordSet
+		"""
+		self._RecordType = genRecordType(pydataset.getColumnNames())
+		columnIxs = range(len(self._RecordType._fields))
+		records = []
+		for row in pydataset:
+			records.append(self._RecordType(row))
+		self._groups = [tuple(records)]
+	
 	def _initializeEmpty(self, RecordType):
 		"""Simply define what kind of RecordSet this will be, but start with no data.
 		"""
@@ -154,6 +169,8 @@ class RecordSet(object):
 		# First check if it's a DataSet object. If so, convert it.
 		if isinstance(initialData, BasicDataset):
 			self._initializeDataSet(initialData)
+		elif isinstance(initialData, PyDataSet):
+			self._initializePyDataSet(initialData)
 		elif recordType:
 			# create a RecordType, if needed
 			if not (isinstance(recordType, type) and issubclass(recordType, RecordType)):

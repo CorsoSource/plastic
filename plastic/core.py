@@ -5,7 +5,7 @@ from shared.data.plastic.meta import MetaPlasticORM
 from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
 from shared.data.plastic.column import PlasticColumn
 
-			
+
 class PlasticORM_Base(object):
 	"""Base class that connects a derived class to the database.
 
@@ -46,7 +46,6 @@ class PlasticORM_Base(object):
 	
 	# Holding list for queuing the changes that need to be applied
 	_pending = []
-	
 
 	def _delayAutocommit(function):
 		"""During some internal housekeeping, it's handy to prevent Plastic to trying to
@@ -67,7 +66,7 @@ class PlasticORM_Base(object):
 	
 		
 	@_delayAutocommit
-	def __init__(self, *args, bypass_validation=False, **kwargs):
+	def __init__(self, *args, **kwargs):
 		"""Initialize the object's instance with the given values.
 
 		Arguments are assumed to map directly in order to the columns.
@@ -78,6 +77,9 @@ class PlasticORM_Base(object):
 		Include the keyword arguement bypass_validation = True
 		  to accept the values 
 		"""
+		# default value
+		bypass_validation = kwargs.pop('bypass_validation', False)
+		
 		self._pending = [] # override class object to ensure changes are local
 		
 		values = dict((col,val) for col,val in zip(self._columns,args))
@@ -353,7 +355,6 @@ class PlasticORM_Base(object):
 		
 	def _commit(self):
 		"""Apply the changes, if any."""
-				
 		if not self._pending:
 			return
 
