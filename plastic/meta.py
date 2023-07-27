@@ -53,7 +53,10 @@ class MetaPlasticORM(type):
 		As instances are created, they all follow the schema that is retrieved,
 		  so this only needs to be done once, so we perform it on class definition.
 		"""
-
+		# ensure the configuration is valid
+		with cls._connection as plasticDB:
+			assert plasticDB.tableExists(cls._schema, cls._table), "Table may not exist or %r.%r is ambiguous" % (cls._schema, cls._table,)
+		
 		# Auto-configure the key columns, if needed        
 		if cls._autoconfigure or not (cls._primary_key_cols and cls._primary_key_auto):
 			with cls._connection as plasticDB:
