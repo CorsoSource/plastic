@@ -1,13 +1,30 @@
 
 
 from shared.data.plastic.recordset import RecordSet
-from shared.data.plastic.connectors.base import META_QUERIES, PlasticORM_Connection_Base
+from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
 from shared.data.plastic.core import PlasticORM_Base
 
 
-META_QUERIES['ignition'] = {
-	
+META_QUERIES = {
+	'ignition': {},
 }
+
+ENGINES = [
+	'base', 'mysql', 'postgres', 'sqlite'
+]
+
+def autopopulate_metaqueries(META_QUERIES=META_QUERIES, ENGINES=ENGINES):
+	for engine in ENGINES:
+		try:
+			META_QUERIES.update(
+				shared.data.plastic.metaqueries.getDict()[engine].META_QUERIES
+			)
+		except Exception as error:
+			raise error
+
+autopopulate_metaqueries()
+
+
 
 
 def isIgnition():
@@ -19,6 +36,8 @@ def isIgnition():
 
 
 class Ignition_Connector(PlasticORM_Connection_Base):
+	__meta_queries__ = META_QUERIES
+	
 	_engine = None
 	_param_token = '?'
 	
@@ -37,8 +56,8 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 
 	def __exit__(self, *args):
 		if self.tx:
-			system.db.commitTransaction(tx)
-			system.db.closeTransaction(tx)
+			system.db.commitTransaction(self.tx)
+			system.db.closeTransaction(self.tx)
 			self.tx = None
 			
 
@@ -69,3 +88,13 @@ class PlasticIgnition(PlasticORM_Base):
 	_dbInfo = None
 
 	pass
+
+
+
+def connect_table(db, schema, table, autocommit=False):
+	return type(table, (PlasticIgnition,), {
+			'_dbInfo': db,
+			'_schema': schema,
+			'_table': table,
+			'_autocommit': autocommit,
+		})

@@ -2,31 +2,6 @@ import functools, textwrap
 
 
 
-META_QUERIES = {}
-META_QUERIES[None] = {
-	'insert': textwrap.dedent("""
-		-- Insert from PlasticORM_Connection
-		insert into %s
-			(%s)
-		values
-			(%s)
-		"""),
-	'update': textwrap.dedent("""
-		-- Update from PlasticORM_Connection
-		update %s
-		set %s
-		where %s
-		"""),
-	'basic_filtered': textwrap.dedent("""
-		-- A Basic filter query for PlasticORM
-		select %s
-		from %s
-		where %s
-		""")
-}
-
-
-
 class Template_PlasticORM_Connection(object):
 	_engine = None
 	_param_token = 'PARAM_TOKEN'
@@ -68,12 +43,19 @@ class Template_PlasticORM_Connection(object):
 		return self.query(columnQuery, [table, schema])
 
 
+	def tableExists(self, schema, table):
+		existsQuery = self._get_query_template('tableExists')
+		results = self.query(existsQuery, [table, schema])
+		return len(list(results.records)) == 1
+
 
 
 class PlasticORM_Connection_Base(Template_PlasticORM_Connection):
 	"""Helper class for connecting to the database.
 	Replace and override as needed.
-	"""            
+	"""
+	__meta_queries__ = shared.data.plastic.metaqueries.base.META_QUERIES
+	
 	_engine = ''
 	_param_token = 'PARAM_TOKEN'
 	_keep_alive = True
@@ -96,7 +78,7 @@ class PlasticORM_Connection_Base(Template_PlasticORM_Connection):
 	
 
 	def _get_query_template(self, queryType):
-		qt = META_QUERIES[self._engine].get(queryType) or META_QUERIES[None][queryType]
+		qt = self.__meta_queries__[self._engine].get(queryType) or self.__meta_queries__[None][queryType]
 		return qt.replace('PARAM_TOKEN',self._param_token)
 	
 

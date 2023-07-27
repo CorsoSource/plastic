@@ -7,39 +7,15 @@ import pymysql
 import textwrap
 
 from shared.data.plastic.recordset import RecordSet
-from shared.data.plastic.connectors.base import META_QUERIES, PlasticORM_Connection_Base
+from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
 from shared.data.plastic.core import PlasticORM_Base
 
 
-META_QUERIES['mysql'] = {
-	'primaryKeys': textwrap.dedent("""
-			-- Query for primary keys for PlasticORM
-			select c.COLUMN_NAME
-			,   case when c.extra like '%%auto_increment%%' 
-						then 1
-					else 0
-				end as autoincrements
-			from information_schema.columns as c
-			where lower(c.table_name) = lower(PARAM_TOKEN)
-				and c.column_key = 'PRI'
-				and lower(c.table_schema) = lower(PARAM_TOKEN)
-			order by c.ordinal_position
-			"""),
-	'columns': textwrap.dedent("""
-			-- Query for column names for PlasticORM 
-			select c.COLUMN_NAME,
-				case when c.IS_NULLABLE = 'NO' then 0
-					else 1
-				end as IS_NULLABLE
-			from information_schema.columns as c
-			where c.table_name = PARAM_TOKEN
-				and c.table_schema = PARAM_TOKEN
-			order by c.ordinal_position
-			"""),
-	}
-
 
 class Mysql_Connector(PlasticORM_Connection_Base):
+	
+	__meta_queries__ = shared.data.plastic.metaqueries.mysql.META_QUERIES
+
 	_engine = 'mysql'
 	_param_token = '%s'
 	_keep_alive = True

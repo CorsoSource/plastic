@@ -7,21 +7,10 @@ from shared.data.plastic.connectors.base import META_QUERIES, PlasticORM_Connect
 from shared.data.plastic.core import PlasticORM_Base
 
 
-META_QUERIES['sqlite'] = {
-	'primaryKeys': textwrap.dedent("""
-			-- Query for primary keys for PlasticORM using SQLite3
-			-- NOTE: requires additional processing!
-			PRAGMA table_info(PARAM_TOKEN)
-			"""),
-	'columns': textwrap.dedent("""
-			-- Query for column names for PlasticORM using SQLite3
-			-- NOTE: requires additional processing!
-			PRAGMA table_info(PARAM_TOKEN)
-			"""),
-}
-
 
 class Sqlite_Connector(PlasticORM_Connection_Base):
+	__meta_queries__ = shared.data.plastic.metaqueries.sqlite.META_QUERIES
+
 	_engine = 'sqlite'
 	_param_token = '?'
 	_keep_alive = True
