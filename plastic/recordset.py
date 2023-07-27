@@ -195,6 +195,13 @@ class RecordSet(object):
 		"""
 		return len(self._groups)
 	
+	def __nonzero__(self):
+		for group in self._groups:
+			if group:
+				return True
+		else:
+			return False
+	
 	# Iterable 
 	# Sequence
 	
