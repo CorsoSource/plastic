@@ -140,7 +140,7 @@ class PlasticORM_Base(object):
 
 
 	@classmethod
-	@_delayAutocommit
+#	@_delayAutocommit
 	def find(cls, *filters):
 		"""Return a list of instances for all the records that match the filters.
 
@@ -319,13 +319,13 @@ class PlasticORM_Base(object):
 		for pkColumn in self._primary_key_cols:
 			pkValues[pkColumn] = values.get(pkColumn, getattr(self,pkColumn))
 		
-		# Check if the keys are given, if so get all the values for that record
-		
 		# We need to do a specialized delay autocommit so we can safely attempt this.
 		bufferAutocommit = self._autocommit
-		super(PlasticORM_Base,self).__setattr__('_autocommit', False)
 		
+		# Check if the keys are given, if so get all the values for that record
 		try:
+			super(PlasticORM_Base,self).__setattr__('_autocommit', False)
+		
 			# If this fails, it'll throw an IndexError from the record set being empty
 			self._retrieveSelf(**pkValues)
 		
