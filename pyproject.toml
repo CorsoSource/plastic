@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["plastic"]
+
+[project]
+name = "plastic"
+version = "0.2.0"
+authors = [
+	{ name="Andrew Geiger", email="andrew@corsosystems.com" },
+    { name="Emily Liu", email="emily.liu@corsosystems.com" },
+]
+
+description = "An ORM interface that molds itself to your data."
+readme = "README.md"
+
+requires-python = ">=3.6"
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/CorsoSource/plastic"
+Source = "https://github.com/CorsoSource/plastic"
