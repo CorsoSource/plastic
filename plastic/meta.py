@@ -46,6 +46,13 @@ class MetaPlasticORM(type):
 		# Continue and carry out the normal class definition process   
 		return super(MetaPlasticORM,cls).__init__(clsname, bases, attributes)   
 
+	@property
+	def _fullyQualifiedTableName(self):
+		"""Helper function for getting the table name"""
+		if self._schema:
+			return '%s.%s' % (self._schema, self._table,)
+		else:
+			return '%s' % (self._table,)
 
 	def _verify_columns(cls):
 		"""Auto-configure the class definition. 

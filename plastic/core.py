@@ -181,7 +181,7 @@ class PlasticORM_Base(object):
 			recordsQuery = plasticDB._get_query_template('basic_filtered')
 			recordsQuery %= (
 				','.join(cls._columns),
-				cls._table,
+				cls._fullyQualifiedTableName,
 				'\n\t and '.join(condition for condition in filters)
 				)
 			
@@ -228,7 +228,7 @@ class PlasticORM_Base(object):
 			recordQuery = plasticDB._get_query_template('basic_filtered')
 			recordQuery %= (
 				','.join(sorted(self._nonKeyColumns)),
-				self._table,
+				self._fullyQualifiedTableName,
 				','.join('%s = PARAM_TOKEN' % keyColumn 
 						 for keyColumn 
 						 in sorted(keyColumns)))
@@ -268,7 +268,7 @@ class PlasticORM_Base(object):
 		
 		# Delegate the insert to the engine and apply
 		with self._connection as plasticDB:
-			rowID = plasticDB.insert(self._table, columns, values)
+			rowID = plasticDB.insert(self._fullyQualifiedTableName, columns, values)
 			# I can't think of a case where there's more than one autocolumn, but /shrug
 			# they're already iterables, so I'm just going to hit it with zip
 			for column in self._autoKeyColumns:
@@ -285,7 +285,7 @@ class PlasticORM_Base(object):
 		# Don't update a column to null when it shouldn't be
 		for column in set(self._not_nullable_cols).intersection(self._pending):
 			if getattr(self, column) is None:
-				raise ValueError('Can not null column %s in table %s.%s' % (column, self._schema, self._table))
+				raise ValueError('Can not null column %s in table %s.%s' % (column, self._schema, self._fullyQualifiedTableName))
 
 		setValues = dict((column,getattr(self,column))
 					  for column 
@@ -297,7 +297,7 @@ class PlasticORM_Base(object):
 		
 		# Delegate the update to the engine and apply
 		with self._connection as plasticDB:            
-			plasticDB.update(self._table, setValues, keyValues)
+			plasticDB.update(self._fullyQualifiedTableName, setValues, keyValues)
 		
 		# Clear the pending buffer, since we just sync'd
 		self._pending = []
@@ -372,6 +372,6 @@ class PlasticORM_Base(object):
 			
 			
 	def __repr__(self):
-		return '<%s (\n\t  %s)>' % (self._table, '\n\t, '.join('%s = %s' % (col,repr(getattr(self,col)))
+		return '<%s (\n\t  %s)>' % (self._fullyQualifiedTableName, '\n\t, '.join('%s = %s' % (col,repr(getattr(self,col)))
 												 for col
 												 in self._columns))

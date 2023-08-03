@@ -24,6 +24,9 @@ class Sqlite_Connector(PlasticORM_Connection_Base):
 		else:
 			self.connection = None    
 
+	@property
+	def fully_qualified_table_name(self):
+		return '%s' % (self._table,)
 
 	def connect(self, forceReconnect=False):
 		if self.connection and forceReconnect:
