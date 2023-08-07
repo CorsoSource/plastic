@@ -140,6 +140,13 @@ class PlasticORM_Base(object):
 		"""Helper function for getting the non-PK columns"""
 		return set(self._columns).difference(self._primary_key_cols)
 
+	@property
+	def _fullyQualifiedTableName(self):
+		"""Helper function for getting the table name"""
+		if self._schema:
+			return '%s.%s' % (self._schema, self._table,)
+		else:
+			return '%s' % (self._table,)
 
 	@classmethod
 #	@_delayAutocommit
