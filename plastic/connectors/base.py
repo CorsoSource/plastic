@@ -33,6 +33,10 @@ class Template_PlasticORM_Connection(object):
 		raise NotImplementedError("DB engines should be made as a mixin.")
 
 
+	def _execute_create(self, createQuery, createValues):
+		raise NotImplementedError("DB engines should be made as a mixin.")
+
+
 	def primaryKeys(self, schema, table):
 		pkQuery = self._get_query_template('primaryKeys')
 		return self.query(pkQuery, [table, schema])
@@ -119,3 +123,10 @@ class PlasticORM_Connection_Base(Template_PlasticORM_Connection):
 		
 		updateQuery = updateQuery.replace('PARAM_TOKEN', self._param_token)
 		self._execute_update(updateQuery, setValues+keyValues)
+
+	def create(self, table, columnDict):		
+		createQuery = self._get_query_template('create')
+		createQuery %= (table,
+						','.join('%s %s' % (columnInfo[0], columnInfo[1]) for columnInfo in sorted(columnDict.items()))
+		)
+		self._execute_create(createQuery)

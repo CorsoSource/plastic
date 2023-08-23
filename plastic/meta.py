@@ -62,6 +62,9 @@ class MetaPlasticORM(type):
 		"""
 		# ensure the configuration is valid
 		with cls._connection as plasticDB:
+			if not plasticDB.tableExists(cls._schema, cls._table) and cls._auto_create_table:
+				cls._createTable()
+			
 			assert plasticDB.tableExists(cls._schema, cls._table), "Table may not exist or %r.%r is ambiguous" % (cls._schema, cls._table,)
 		
 		# Auto-configure the key columns, if needed        

@@ -81,6 +81,11 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 		else:
 			system.db.runPrepUpdate(updateQuery, updateValues, self.dbName, getKey=0)
 
+	def _execute_create(self, createQuery):
+		if self.tx:
+			system.db.runUpdateQuery(createQuery, self.dbName, self.tx, getKey=0)
+		else:
+			system.db.runUpdateQuery(createQuery, self.dbName, getKey=0)
 
 class PlasticIgnition(PlasticORM_Base):
 	_connectionType = Ignition_Connector
@@ -90,11 +95,12 @@ class PlasticIgnition(PlasticORM_Base):
 	pass
 
 
-
-def connect_table(db, schema, table, autocommit=False):
+def connect_table(db, schema, table, column_def={}, autocommit=False, auto_create_table=False):
 	return type(table, (PlasticIgnition,), {
 			'_dbInfo': db,
 			'_schema': schema,
 			'_table': table,
+			'_column_def': column_def,
 			'_autocommit': autocommit,
+			'_auto_create_table': auto_create_table,
 		})

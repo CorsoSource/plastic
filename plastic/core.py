@@ -32,6 +32,11 @@ class PlasticORM_Base(object):
 	# NOTE: if there are no columns or PKs defined, auto-configure runs regardless
 	_autoconfigure = False
 
+	# Set _auto_create_table to True to automatically create the specified table if it does not exist
+	# columnDef must be provided in order for this to work
+	_auto_create_table = False
+	_column_def = {}
+
 	# Configure these to avoid auto-configure overhead
 	_columns = tuple()
 	_primary_key_cols = tuple()
@@ -202,8 +207,17 @@ class PlasticORM_Base(object):
 			objects.append(cls(**initDict))
 
 		return objects
+	
+	@classmethod
+	def _createTable(cls):
+		"""
+		Attempt to create a new table using the given name and column definitions 
+		"""
+		assert cls._column_def, 'To create table, column_def must be provided' 
 		
-		
+		with cls._connection as plasticDB:
+			plasticDB.create(cls._fullyQualifiedTableName, cls._column_def)
+
 	@_delayAutocommit
 	def _retrieveSelf(self, **primaryKeyValues):
 		"""Automatically fill in the column values for given PK record."""

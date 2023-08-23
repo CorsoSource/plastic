@@ -22,4 +22,10 @@ META_QUERIES = {None: {
         from %s
         where %s
         """),
+    'create': textwrap.dedent("""
+        -- Create a table for PlasticORM
+        create table %s (
+            %s
+        )
+        """),
 }   }
