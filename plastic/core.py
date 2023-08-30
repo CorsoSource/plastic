@@ -235,11 +235,11 @@ class PlasticORM_Base(object):
 		if any(value is None or isinstance(value, PlasticColumn)
 			   for value 
 			   in keyDict.values()):
-			raise ValueError('Can not retrieve record missing key values: %s' % 
+			raise IndexError('Can not retrieve record missing key values: %s' % 
 							 ','.join(col 
 									  for col 
 									  in keyDict 
-									  if keyDict[key] is None))
+									  if keyDict[col] is None))
 		
 		# Query for associated record
 		with self._connection as plasticDB:
@@ -306,7 +306,7 @@ class PlasticORM_Base(object):
 		# Don't update a column to null when it shouldn't be
 		for column in set(self._not_nullable_cols).intersection(self._pending):
 			if getattr(self, column) is None:
-				raise ValueError('Can not null column %s in table %s.%s' % (column, self._schema, self._fullyQualifiedTableName))
+				raise ValueError('Cannot null column %s in table %s' % (column, self._fullyQualifiedTableName))
 
 		setValues = dict((column,getattr(self,column))
 					  for column 
