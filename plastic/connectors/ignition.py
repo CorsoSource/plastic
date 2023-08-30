@@ -50,7 +50,7 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 
 	def __enter__(self):
 		if self.tx == None:
-			self.tx = system.db.beginTransaction(self.dbName)
+			self.tx = system.db.beginTransaction(self.dbName, 8)
 		return self
 	
 

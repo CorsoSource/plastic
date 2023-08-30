@@ -39,17 +39,18 @@ class Template_PlasticORM_Connection(object):
 
 	def primaryKeys(self, schema, table):
 		pkQuery = self._get_query_template('primaryKeys')
-		return self.query(pkQuery, [table, schema])
-
+		pkArgs = [table, schema][0:pkQuery.count(self._param_token)]
+		return self.query(pkQuery, pkArgs)
 
 	def columnConfig(self, schema, table):
 		columnQuery = self._get_query_template('columns')
-		return self.query(columnQuery, [table, schema])
-
+		columnArgs = [table, schema][0:columnQuery.count(self._param_token)]
+		return self.query(columnQuery, columnArgs)
 
 	def tableExists(self, schema, table):
 		existsQuery = self._get_query_template('tableExists')
-		results = self.query(existsQuery, [table, schema])
+		existsArgs = [table, schema][0:existsQuery.count(self._param_token)]
+		results = self.query(existsQuery, existsArgs)
 		return len(list(results.records)) == 1
 
 

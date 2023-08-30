@@ -46,6 +46,32 @@ class MetaPlasticORM(type):
 		# Continue and carry out the normal class definition process   
 		return super(MetaPlasticORM,cls).__init__(clsname, bases, attributes)   
 
+	def __iter__(cls):
+		"""
+		Returns all rows, unfiltered, from the table.
+		"""
+		with cls._connection as plasticDB:
+			# Build the query string (as defined by the engine configured)
+			recordsQuery = "select %s\nfrom %s" 
+			recordsQuery %= (
+				','.join(cls._columns),
+				cls._fullyQualifiedTableName
+				)
+			if cls._primary_key_cols:
+				recordsQuery += "\norder by %s"
+				recordsQuery %= (','.join(cls._primary_key_cols),)
+			
+			records = plasticDB.query(recordsQuery)
+		
+		objects = []
+		for record in records:
+			initDict = record._asdict()
+			initDict['bypass_validation'] = True
+			objects.append(cls(**initDict))
+		
+		for object in objects:
+			yield object
+
 	@property
 	def _fullyQualifiedTableName(self):
 		"""Helper function for getting the table name"""
