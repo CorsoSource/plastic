@@ -93,6 +93,9 @@ class MetaPlasticORM(type):
 			
 			assert plasticDB.tableExists(cls._schema, cls._table), "Table may not exist or %r.%r is ambiguous" % (cls._schema, cls._table,)
 		
+		if cls._column_defaults is None:
+			cls._column_defaults = {}
+		
 		# Auto-configure the key columns, if needed        
 		if cls._autoconfigure or not (cls._primary_key_cols and cls._primary_key_auto):
 			with cls._connection as plasticDB:
@@ -119,3 +122,7 @@ class MetaPlasticORM(type):
 					cls._columns = tuple()
 					cls._not_nullable_cols = tuple()
 					cls._values = []
+				
+				# TODO: add column default configuration from database
+				#       unless already set (don't override?)
+				#cls._column_defaults = ...

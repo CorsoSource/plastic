@@ -95,12 +95,17 @@ class PlasticIgnition(PlasticORM_Base):
 	pass
 
 
-def connect_table(db, schema, table, column_def={}, autocommit=False, auto_create_table=False):
+
+def connect_table(db, schema, table, 
+				  column_def=None, 
+				  column_defaults=None,
+				  autocommit=False, auto_create_table=False):
 	return type(table, (PlasticIgnition,), {
 			'_dbInfo': db,
 			'_schema': schema,
 			'_table': table,
-			'_column_def': column_def,
+			'_column_def': column_def or {},
+			'_column_defaults': column_defaults or {},
 			'_autocommit': autocommit,
 			'_auto_create_table': auto_create_table,
 		})

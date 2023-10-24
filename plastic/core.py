@@ -43,6 +43,8 @@ class PlasticORM_Base(object):
 	_primary_key_auto = tuple()
 	_not_nullable_cols = tuple()
 	
+	_column_defaults = None # set as dictionary of column: value_function to automatically replace nulls
+	
 	# If the _table is blank, the class name will be used instead.
 	_table = ''
 
@@ -188,6 +190,10 @@ class PlasticORM_Base(object):
 				  for conditionValues in values
 				  for value in conditionValues]
 		
+		# should not come up, but safety railing just to be sure
+		assert not any(isinstance(value, PlasticColumn)
+					   for value in values), "A PlasticColumn did not deference correctly. Verify PlasticColumn.__getitem__(...)"
+		
 		with cls._connection as plasticDB:
 			# Build the query string (as defined by the engine configured)
 			recordsQuery = plasticDB._get_query_template('basic_filtered')
@@ -211,7 +217,7 @@ class PlasticORM_Base(object):
 	@classmethod
 	def _createTable(cls):
 		"""
-		Attempt to create a new table using the given name and column definitions 
+		Attempts to create a new table using the given name and column definitions 
 		"""
 		assert cls._column_def, 'To create table, column_def must be provided' 
 		
@@ -250,7 +256,7 @@ class PlasticORM_Base(object):
 			recordQuery %= (
 				','.join(sorted(self._nonKeyColumns)),
 				self._fullyQualifiedTableName,
-				','.join('%s = PARAM_TOKEN' % keyColumn 
+				'\n\t and '.join('%s = PARAM_TOKEN' % keyColumn 
 						 for keyColumn 
 						 in sorted(keyColumns)))
 
@@ -372,26 +378,56 @@ class PlasticORM_Base(object):
 			# bouncing off exceptions and settings as rails.
 			# HONK.
 			super(PlasticORM_Base,self).__setattr__('_autocommit', bufferAutocommit)
-
-		
+	
+	
+	@property
+	def _missing_contraints(self):
+		required_columns = set(self._primary_key_cols + self._not_nullable_cols)
+		required_columns -= self._autoKeyColumns
+		return [column for column in required_columns
+				if isinstance(getattr(self,column), PlasticColumn) 
+			]
+	
+	
+	def _set_defaults(self):
+		for column in self._columns:
+			if isinstance(getattr(self, column), (type(None), PlasticColumn)):
+				if column in self._column_defaults:
+					setattr(self, column, self._column_defaults[column]())
+	
+	
 	def _commit(self):
 		"""Apply the changes, if any."""
 		if not self._pending:
 			return
-
-		# Verify we have enough to insert
-		# Ensure that the primary keys are at least set
-		# NOTE: if PKs are set under autocommit conditions, 
-		#   the engine will try to retrieve.
-		# We'll do the same here, with the caveat that we'll update
+		
+		# Make sure that commit can't be fired inside the commit
+		# (no need for infinite recursion here, no sireee.....)
+		try:
+			bufferAutocommit = self._autocommit
+			self._autocommit = False
+			
+			self._set_defaults()
+			
+			# Verify we have enough to insert
+			# Ensure that the primary keys are at least set
+			assert not self._missing_contraints, "Needed attribute left unset: %r" % (self._missing_contraints,)
+			
+			# NOTE: if PKs are set under autocommit conditions, 
+			#   the engine will try to retrieve.
+			# We'll do the same here, with the caveat that we'll update
 		
 		# So: are we switching to another record? If so pull and update!
 		if set(self._pending) & set(self._primary_key_cols):            
-			self._upsert()
-		else:
-			self._update()
-			
-			
+				self._upsert()
+			else:
+				self._update()
+		except Exception as err:
+			raise
+		finally:
+			self._autocommit = bufferAutocommit
+		
+		
 	def __repr__(self):
 		return '<%s (\n\t  %s)>' % (self._fullyQualifiedTableName, '\n\t, '.join('%s = %s' % (col,repr(getattr(self,col)))
 												 for col
