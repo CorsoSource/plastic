@@ -1,8 +1,8 @@
 
 
-from shared.data.plastic.recordset import RecordSet
-from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
-from shared.data.plastic.core import PlasticORM_Base
+from plastic.recordset import RecordSet
+from plastic.connectors.base import PlasticORM_Connection_Base
+from plastic.core import PlasticORM_Base
 
 
 META_QUERIES = {
@@ -17,7 +17,7 @@ def autopopulate_metaqueries(META_QUERIES=META_QUERIES, ENGINES=ENGINES):
 	for engine in ENGINES:
 		try:
 			META_QUERIES.update(
-				shared.data.plastic.metaqueries.getDict()[engine].META_QUERIES
+				plastic.metaqueries.getDict()[engine].META_QUERIES
 			)
 		except Exception as error:
 			raise error

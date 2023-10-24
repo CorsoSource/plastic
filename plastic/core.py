@@ -1,9 +1,9 @@
 import functools
 
 
-from shared.data.plastic.meta import MetaPlasticORM
-from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
-from shared.data.plastic.column import PlasticColumn
+from plastic.meta import MetaPlasticORM
+from plastic.connectors.base import PlasticORM_Connection_Base
+from plastic.column import PlasticColumn
 
 
 class PlasticORM_Base(object):

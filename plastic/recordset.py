@@ -1,4 +1,4 @@
-from shared.data.plastic.record import RecordType, genRecordType
+from plastic.record import RecordType, genRecordType
 
 import functools, math
 

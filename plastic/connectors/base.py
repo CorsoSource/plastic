@@ -59,7 +59,7 @@ class PlasticORM_Connection_Base(Template_PlasticORM_Connection):
 	"""Helper class for connecting to the database.
 	Replace and override as needed.
 	"""
-	__meta_queries__ = shared.data.plastic.metaqueries.base.META_QUERIES
+	__meta_queries__ = plastic.metaqueries.base.META_QUERIES
 	
 	_engine = ''
 	_param_token = 'PARAM_TOKEN'

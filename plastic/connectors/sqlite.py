@@ -2,14 +2,14 @@ import sqlite3
 
 import textwrap
 
-from shared.data.plastic.recordset import RecordSet
-from shared.data.plastic.connectors.base import META_QUERIES, PlasticORM_Connection_Base
-from shared.data.plastic.core import PlasticORM_Base
+from plastic.recordset import RecordSet
+from plastic.connectors.base import META_QUERIES, PlasticORM_Connection_Base
+from plastic.core import PlasticORM_Base
 
 
 
 class Sqlite_Connector(PlasticORM_Connection_Base):
-	__meta_queries__ = shared.data.plastic.metaqueries.sqlite.META_QUERIES
+	__meta_queries__ = plastic.metaqueries.sqlite.META_QUERIES
 
 	_engine = 'sqlite'
 	_param_token = '?'
