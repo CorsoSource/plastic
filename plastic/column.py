@@ -73,3 +73,6 @@ class PlasticColumn(object):
 	def __bool__(self):
 		# Always appear like None when not in comparisons
 		return None
+
+	def __repr__(self):
+		return '<%r column: %s>' % (self._parent._fullyQualifiedTableName, self._column)
