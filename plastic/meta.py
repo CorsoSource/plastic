@@ -1,7 +1,7 @@
 
 
-from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
-from shared.data.plastic.column import PlasticColumn
+from plastic.connectors.base import PlasticORM_Connection_Base
+from plastic.column import PlasticColumn
 
 
 from weakref import WeakSet

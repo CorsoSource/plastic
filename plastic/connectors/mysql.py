@@ -6,15 +6,15 @@ import pymysql
 
 import textwrap
 
-from shared.data.plastic.recordset import RecordSet
-from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
-from shared.data.plastic.core import PlasticORM_Base
+from plastic.recordset import RecordSet
+from plastic.connectors.base import PlasticORM_Connection_Base
+from plastic.core import PlasticORM_Base
 
 
 
 class Mysql_Connector(PlasticORM_Connection_Base):
 	
-	__meta_queries__ = shared.data.plastic.metaqueries.mysql.META_QUERIES
+	__meta_queries__ = plastic.metaqueries.mysql.META_QUERIES
 
 	_engine = 'mysql'
 	_param_token = '%s'

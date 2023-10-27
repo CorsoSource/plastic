@@ -108,14 +108,14 @@ class PlasticColumnBackreference(object):
 
 	def is_undefined(self):
 		return isinstance(getattr(self._parent, self.column), PlasticColumnBackreference)
-	
+
 	def resolve(self):
 		if self.is_undefined():
 			new_value = self._column_reference.default
 			if new_value is not None:
 				setattr(self._parent, self.column, new_value)
 		return self.value
-	
+
 	@property
 	def default(self):
 		"""Asking for the default value renders it!"""
