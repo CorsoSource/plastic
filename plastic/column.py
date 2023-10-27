@@ -1,13 +1,14 @@
 
 
 class PlasticColumn(object):
-	__slots__ = ('_parent', '_column')
+	__slots__ = ('_parent', '_column', '_default')
 	
 
-	def __init__(self, parentClass, columnName):
+	def __init__(self, parentClass, columnName, default=None):
 		# anchor to the parent class to ensure runtime modifications are considered
 		self._parent = parentClass
 		self._column = columnName
+		self._default = default
 	
 
 	def dereference(self, selector):
@@ -15,6 +16,19 @@ class PlasticColumn(object):
 			return selector.fqn
 		else:
 			return selector
+
+
+	@property
+	def default(self):
+		# return a default value, if needed
+		if getattr(self._default, '__call__', None):
+			return self._default()
+		else:
+			return self._default
+	
+	@default.setter
+	def default(self, new_default):
+		self._default = new_default
 
 
 	@property
@@ -73,3 +87,47 @@ class PlasticColumn(object):
 	def __bool__(self):
 		# Always appear like None when not in comparisons
 		return None
+
+	def __repr__(self):
+		return '<%r column: %s>' % (self._parent._fullyQualifiedTableName, self._column)
+
+
+class PlasticColumnBackreference(object):
+	"""Links an instance to a generic column for the option of late resolution"""
+	__slots__ = ('_parent', '_column_reference')
+
+	def __init__(self, entry_instance, plastic_column):
+		assert isinstance(plastic_column, PlasticColumn)
+		self._parent = entry_instance
+		self._column_reference= plastic_column
+
+	@property
+	def column(self):
+		return self._column_reference._column
+
+
+	def is_undefined(self):
+		return isinstance(getattr(self._parent, self.column), PlasticColumnBackreference)
+
+	def resolve(self):
+		if self.is_undefined():
+			setattr(self._parent, self.column, self._column_reference.default)
+		return self.value
+
+	@property
+	def default(self):
+		"""Asking for the default value renders it!"""
+		return self.resolve()
+
+	@property
+	def value(self):
+		if self.is_undefined():
+			return self
+		else:
+			return getattr(self._parent, self.column)
+
+	def __repr__(self):
+		if self.is_undefined():
+			return '<unset: %s>' % (self.column,)
+		else:
+			return getattr(self._parent, self.column)

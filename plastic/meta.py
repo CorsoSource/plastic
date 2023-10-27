@@ -4,6 +4,10 @@ from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
 from shared.data.plastic.column import PlasticColumn
 
 
+from weakref import WeakSet
+
+
+
 class MetaPlasticORM(type):
 	"""Metaclass that allows new PlasticORM classes to autoconfigure themselves.
 
@@ -36,16 +40,28 @@ class MetaPlasticORM(type):
 			cls._verify_columns()
 		cls._pending = []
 		
+		# each class gets its own group of instances, of course
+		cls._instances = WeakSet()
+		
+		# grab the defaults set, if any
+		column_defaults = getattr(cls, '_column_defaults', {})
+		
+		# remove since it's only for setup - use Table.column.default = new_value otherwise
+		if hasattr(cls, '_column_defaults'):
+			delattr(cls, '_column_defaults')
+		
 		# Add the column names themselves as convenience attributes.
 		# These are of type PlasticColumn and allow some additional abstractions.
 		# NOTE: columns are not validated! They are assumed to not include
 		#   spaces or odd/illegal characters.
 		for ix,column in enumerate(cls._columns):
-			setattr(cls,column,PlasticColumn(cls, column))
+			meta_column = PlasticColumn(cls, column)
+			meta_column.default = column_defaults.get(column)
+			setattr(cls, column, meta_column)
 
 		# Continue and carry out the normal class definition process   
 		return super(MetaPlasticORM,cls).__init__(clsname, bases, attributes)   
-
+	
 	def __iter__(cls):
 		"""
 		Returns all rows, unfiltered, from the table.

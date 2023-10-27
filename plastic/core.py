@@ -1,9 +1,13 @@
 import functools
 
 
-from shared.data.plastic.meta import MetaPlasticORM
-from shared.data.plastic.connectors.base import PlasticORM_Connection_Base
-from shared.data.plastic.column import PlasticColumn
+from plastic.meta import MetaPlasticORM
+from plastic.connectors.base import PlasticORM_Connection_Base
+from plastic.column import PlasticColumn, PlasticColumnBackreference
+
+
+from weakref import WeakSet
+
 
 
 class PlasticORM_Base(object):
@@ -31,7 +35,7 @@ class PlasticORM_Base(object):
 	# Set _autoconfigure to True to force the class to reconfigure every time
 	# NOTE: if there are no columns or PKs defined, auto-configure runs regardless
 	_autoconfigure = False
-
+	
 	# Set _auto_create_table to True to automatically create the specified table if it does not exist
 	# columnDef must be provided in order for this to work
 	_auto_create_table = False
@@ -53,6 +57,11 @@ class PlasticORM_Base(object):
 	
 	# Holding list for queuing the changes that need to be applied
 	_pending = []
+
+	# Hold (weak) references to each instance created to make higher-level committing easier.
+	_instances = WeakSet()
+	
+
 
 	def _delayAutocommit(function):
 		"""During some internal housekeeping, it's handy to prevent Plastic to trying to
@@ -84,6 +93,14 @@ class PlasticORM_Base(object):
 		Include the keyword arguement bypass_validation = True
 		  to accept the values 
 		"""
+		type(self)._instances.add(self)
+		
+		# initially set all columns to backreferences for easier setting propagation
+		for column in self._columns:
+			plastic_column = getattr(self, column)
+			setattr(self, column, PlasticColumnBackreference(self, plastic_column))
+		
+		
 		# default value
 		bypass_validation = kwargs.pop('bypass_validation', False)
 		
@@ -123,7 +140,6 @@ class PlasticORM_Base(object):
 		if self._autocommit and self._pending:
 			self._commit()
 
-
 	@property
 	def _autoKeyColumns(self):
 		"""Helper function for getting the key set"""
@@ -140,13 +156,12 @@ class PlasticORM_Base(object):
 				   for pkcol,auto
 				   in zip(self._primary_key_cols, self._primary_key_auto)
 				   if not auto)
-	
 
 	@property
 	def _nonKeyColumns(self):
 		"""Helper function for getting the non-PK columns"""
 		return set(self._columns).difference(self._primary_key_cols)
-
+	
 	@property
 	def _fullyQualifiedTableName(self):
 		"""Helper function for getting the table name"""
@@ -223,7 +238,7 @@ class PlasticORM_Base(object):
 		
 		with cls._connection as plasticDB:
 			plasticDB.create(cls._fullyQualifiedTableName, cls._column_def)
-
+		
 	@_delayAutocommit
 	def _retrieveSelf(self, **primaryKeyValues):
 		"""Automatically fill in the column values for given PK record."""
@@ -328,8 +343,8 @@ class PlasticORM_Base(object):
 		
 		# Clear the pending buffer, since we just sync'd
 		self._pending = []
-
-		
+	
+	
 	def _upsert(self):
 		"""Attempt to decide if an update or insert is called for.
 		"""
@@ -341,6 +356,11 @@ class PlasticORM_Base(object):
 			# Don't upload unset values...
 			if isinstance(value, PlasticColumn):
 				continue
+			elif isinstance(value, PlasticColumnBackreference):
+				value = value.default
+				if value is None:
+					continue # don't upsert NULL values - that's silly, since NULL is the universal default 
+					# (trivially the Missing Record, after all)
 					
 			values[column] = value
 					
@@ -385,15 +405,16 @@ class PlasticORM_Base(object):
 		required_columns = set(self._primary_key_cols + self._not_nullable_cols)
 		required_columns -= self._autoKeyColumns
 		return [column for column in required_columns
-				if isinstance(getattr(self,column), PlasticColumn) 
+				if isinstance(getattr(self,column), (PlasticColumn, PlasticColumnBackreference))
 			]
 	
 	
 	def _set_defaults(self):
 		for column in self._columns:
-			if isinstance(getattr(self, column), (type(None), PlasticColumn)):
-				if column in self._column_defaults:
-					setattr(self, column, self._column_defaults[column]())
+			# if unset, set it!
+			value = getattr(self, column)
+			if isinstance(value, (PlasticColumn, PlasticColumnBackreference)):
+				setattr(self, column, value.default)
 	
 	
 	def _commit(self):
@@ -406,19 +427,19 @@ class PlasticORM_Base(object):
 		try:
 			bufferAutocommit = self._autocommit
 			self._autocommit = False
-			
+
 			self._set_defaults()
-			
+
 			# Verify we have enough to insert
 			# Ensure that the primary keys are at least set
 			assert not self._missing_contraints, "Needed attribute left unset: %r" % (self._missing_contraints,)
-			
-			# NOTE: if PKs are set under autocommit conditions, 
+
+			# NOTE: if PKs are set under autocommit conditions,
 			#   the engine will try to retrieve.
 			# We'll do the same here, with the caveat that we'll update
-		
-		# So: are we switching to another record? If so pull and update!
-		if set(self._pending) & set(self._primary_key_cols):            
+
+			# So: are we switching to another record? If so pull and update!
+			if set(self._pending) & set(self._primary_key_cols):
 				self._upsert()
 			else:
 				self._update()
@@ -427,8 +448,33 @@ class PlasticORM_Base(object):
 		finally:
 			self._autocommit = bufferAutocommit
 		
-		
+	def __str__(self):
+		if self._primary_key_cols:
+			return '<%r entry (%s)>' % (self._fullyQualifiedTableName, ', '.join('%s=%r' % (col, getattr(self, col)) for col in self._primary_key_cols))
+		else:
+			return '<%r entry>' % (self._fullyQualifiedTableName,)
+
+
 	def __repr__(self):
 		return '<%s (\n\t  %s)>' % (self._fullyQualifiedTableName, '\n\t, '.join('%s = %s' % (col,repr(getattr(self,col)))
 												 for col
 												 in self._columns))
+
+
+
+def commit(thing):
+	"""Flush changes to database. Handy for committing after setting values."""
+	if isinstance(thing, PlasticBase):
+		thing._commit()
+	else:
+		try:
+			if issubclass(thing, PlasticORM_Base):
+				for instance in thing._instances:
+					instance._commit()
+		except TypeError:
+			try:
+				getattr(thing, '_commit')()
+			except AttributeError:
+				raise TypeError('Not sure what to commit. %r is not something that seems to commit...' % (thing,))
+
+

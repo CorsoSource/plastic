@@ -80,12 +80,13 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 			system.db.runPrepUpdate(updateQuery, updateValues, self.dbName, self.tx, getKey=0)
 		else:
 			system.db.runPrepUpdate(updateQuery, updateValues, self.dbName, getKey=0)
-
+	
 	def _execute_create(self, createQuery):
 		if self.tx:
 			system.db.runUpdateQuery(createQuery, self.dbName, self.tx, getKey=0)
 		else:
 			system.db.runUpdateQuery(createQuery, self.dbName, getKey=0)
+
 
 class PlasticIgnition(PlasticORM_Base):
 	_connectionType = Ignition_Connector
