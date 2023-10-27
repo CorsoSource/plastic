@@ -38,7 +38,8 @@ class MetaPlasticORM(type):
 			cls._table = cls._table or clsname
 			cls._table = cls._table.lower()
 			cls._verify_columns()
-		cls._pending = []
+			
+		cls._pending = None
 		
 		# each class gets its own group of instances, of course
 		cls._instances = WeakSet()
@@ -108,9 +109,6 @@ class MetaPlasticORM(type):
 				cls._createTable()
 			
 			assert plasticDB.tableExists(cls._schema, cls._table), "Table may not exist or %r.%r is ambiguous" % (cls._schema, cls._table,)
-		
-		if cls._column_defaults is None:
-			cls._column_defaults = {}
 		
 		# Auto-configure the key columns, if needed        
 		if cls._autoconfigure or not (cls._primary_key_cols and cls._primary_key_auto):

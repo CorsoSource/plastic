@@ -35,6 +35,24 @@ def isIgnition():
 		return False
 
 
+def assert_can_read_db():
+	try:
+		assert system.util.getConnectionMode() >= 2, 'Change communication mode to at least Read mode!'
+	except AssertionError:
+		raise
+	except:
+		pass # only designers and vision clients have to worry about this
+
+def assert_can_readwrite_db():
+	try:
+		assert system.util.getConnectionMode() == 3, 'Change communication mode to at Read/Write mode!'
+	except AssertionError:
+		raise
+	except:
+		pass # only designers and vision clients have to worry about this
+	
+
+
 class Ignition_Connector(PlasticORM_Connection_Base):
 	__meta_queries__ = META_QUERIES
 	
@@ -62,6 +80,7 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 			
 
 	def _execute_query(self, query, values):
+		assert_can_read_db()
 		if self.tx:
 			return RecordSet(initialData=system.db.runPrepQuery(query, values, self.dbName, self.tx))
 		else:
@@ -69,6 +88,7 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 	
 
 	def _execute_insert(self, insertQuery, insertValues):
+		assert_can_readwrite_db()
 		if self.tx:
 			return system.db.runPrepUpdate(insertQuery, insertValues, self.dbName, self.tx, getKey=1)
 		else:
@@ -76,12 +96,14 @@ class Ignition_Connector(PlasticORM_Connection_Base):
 
 
 	def _execute_update(self, updateQuery, updateValues):
+		assert_can_readwrite_db()
 		if self.tx:
 			system.db.runPrepUpdate(updateQuery, updateValues, self.dbName, self.tx, getKey=0)
 		else:
 			system.db.runPrepUpdate(updateQuery, updateValues, self.dbName, getKey=0)
 	
 	def _execute_create(self, createQuery):
+		assert_can_readwrite_db()
 		if self.tx:
 			system.db.runUpdateQuery(createQuery, self.dbName, self.tx, getKey=0)
 		else:

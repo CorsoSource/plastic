@@ -55,8 +55,9 @@ class PlasticORM_Base(object):
 	# Be sure to set the _schema. This is does not default!
 	_schema = None
 	
-	# Holding list for queuing the changes that need to be applied
-	_pending = []
+	# Holding set for queuing the changes that need to be applied 
+	# (assume all attributes are applied at once, not in any order)
+	_pending = set()
 
 	# Hold (weak) references to each instance created to make higher-level committing easier.
 	_instances = WeakSet()
@@ -96,15 +97,16 @@ class PlasticORM_Base(object):
 		type(self)._instances.add(self)
 		
 		# initially set all columns to backreferences for easier setting propagation
+		# on-the-spot bypass of autocommit, though!
+		# using super to avoid the __setattr__ nonsense with autocommit and pending
 		for column in self._columns:
 			plastic_column = getattr(self, column)
-			setattr(self, column, PlasticColumnBackreference(self, plastic_column))
-		
+			super(PlasticORM_Base, self).__setattr__(column, PlasticColumnBackreference(self, plastic_column))		
 		
 		# default value
 		bypass_validation = kwargs.pop('bypass_validation', False)
 		
-		self._pending = [] # override class object to ensure changes are local
+		self._pending = set() # override class object to ensure changes are local
 		
 		values = dict((col,val) for col,val in zip(self._columns,args))
 		values.update(kwargs)
@@ -114,7 +116,7 @@ class PlasticORM_Base(object):
 			for column,value in values.items():
 				setattr(self, column, value)
 
-			self._pending = []
+			self._pending = set()
 		else:
 			# Check if the keys are given, if so get all the values for that record
 			if all(key in values for key in self._primary_key_cols):
@@ -131,7 +133,7 @@ class PlasticORM_Base(object):
 		# Set columns as pending changes
 		currentValue = getattr(self, attribute)
 		if attribute in self._columns and currentValue != value:            
-			self._pending.append(attribute)
+			self._pending.add(attribute)
 		
 		super(PlasticORM_Base,self).__setattr__(attribute, value)
 		
@@ -285,7 +287,7 @@ class PlasticORM_Base(object):
 				setattr(self, column, keyValue)
 
 		# Clear the pending buffer, since we just retrieved    
-		self._pending = []
+		self._pending = set()
 
 	
 	def _insert(self):
@@ -301,7 +303,7 @@ class PlasticORM_Base(object):
 		
 		# Don't insert the auto columns
 		if any(self._primary_key_auto):
-			columns = sorted(set(self._pending).difference(self._autoKeyColumns))
+			columns = sorted(self._pending.difference(self._autoKeyColumns))
 		else:
 			columns = self._pending
 		
@@ -317,7 +319,7 @@ class PlasticORM_Base(object):
 				setattr(self,column,rowID)
 		
 		# Clear the pending buffer, since we just sync'd
-		self._pending = []
+		self._pending = set()
 		
 		
 	def _update(self):
@@ -342,7 +344,7 @@ class PlasticORM_Base(object):
 			plasticDB.update(self._fullyQualifiedTableName, setValues, keyValues)
 		
 		# Clear the pending buffer, since we just sync'd
-		self._pending = []
+		self._pending = set()
 	
 	
 	def _upsert(self):
@@ -437,9 +439,9 @@ class PlasticORM_Base(object):
 			# NOTE: if PKs are set under autocommit conditions,
 			#   the engine will try to retrieve.
 			# We'll do the same here, with the caveat that we'll update
-
+			
 			# So: are we switching to another record? If so pull and update!
-			if set(self._pending) & set(self._primary_key_cols):
+			if self._pending & set(self._primary_key_cols):
 				self._upsert()
 			else:
 				self._update()
@@ -464,7 +466,7 @@ class PlasticORM_Base(object):
 
 def commit(thing):
 	"""Flush changes to database. Handy for committing after setting values."""
-	if isinstance(thing, PlasticBase):
+	if isinstance(thing, PlasticORM_Base):
 		thing._commit()
 	else:
 		try:
